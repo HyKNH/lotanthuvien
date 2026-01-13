@@ -22,3 +22,7 @@
 .title-han {
   font-family: var(--font-cactus), serif;
 }
+
+h1 {
+  font-weight: 700;
+}
