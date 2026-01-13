@@ -1,11 +1,12 @@
 "use client"
 import { useEffect, useState } from 'react';
 import Link from 'next/link';
+
 interface Book {
   id: string;
   title: string;
   title_han: string;
-  cat: string;
+  cat: number;
 }
 
 export default function Home() {
@@ -20,9 +21,9 @@ export default function Home() {
       fetchBooks();
     }, []);
 
-  const primers = books.filter(book => book.cat === "Primer");
-  const history = books.filter(book => book.cat === "History");
-  const trans = books.filter(book => book.cat === "Translation");
+  const primers = books.filter(book => book.cat === 1);
+  const history = books.filter(book => book.cat === 2);
+  const trans = books.filter(book => book.cat === 3);
 
   return (
     <div>
@@ -34,7 +35,7 @@ export default function Home() {
               {primers.map(book => (
                 <li key={book.id}>
                   <Link className="hover:underline" href={`/book/${book.id}`}>
-                    <span className="title-han">{book.title_han}</span> – {book.title}
+                    <span className="title-han">{book.title_han}</span> &ndash; {book.title}
                   </Link>
                 </li>
               ))}
@@ -46,7 +47,7 @@ export default function Home() {
               {history.map(book => (
                 <li key={book.id}>
                 <Link className="hover:underline" href={`/book/${book.id}`}>
-                  <span className="title-han">{book.title_han}</span> – {book.title}
+                  <span className="title-han">{book.title_han}</span> &ndash; {book.title}
                 </Link>
                 </li>
               ))}
@@ -58,7 +59,7 @@ export default function Home() {
               {trans.map(book => (
                 <li key={book.id}>
                 <Link className="hover:underline" href={`/book/${book.id}`}>
-                  <span className="title-han">{book.title_han}</span> – {book.title}
+                  <span className="title-han">{book.title_han}</span> &ndash; {book.title}
                 </Link>
                 </li>
               ))}
