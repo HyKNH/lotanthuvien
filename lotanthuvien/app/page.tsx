@@ -1,10 +1,10 @@
 "use client"
 import { useEffect, useState } from 'react';
 import Link from 'next/link';
-
 interface Book {
   id: string;
   title: string;
+  title_han: string;
 }
 
 export default function Home() {
@@ -28,7 +28,7 @@ export default function Home() {
                 {books.map((book) => (
                     <li key={book.id} className="border p-2 rounded shadow">
                         <Link href={`/book/${book.id}`}>
-                            {book.title}
+                            {book.title_han} - {book.title} 
                         </Link>
                     </li>
                 ))}

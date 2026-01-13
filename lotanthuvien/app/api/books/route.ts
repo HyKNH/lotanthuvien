@@ -6,11 +6,11 @@ const supabase = createClient();
 export async function POST(req: Request) {
    
 
-    const { id, title, author, pages } = await req.json();
+    const { id, title, title_han, author, pages } = await req.json();
 
     const { data, error } = await supabase
         .from('books')
-        .insert([{ id, title, author, pages }])
+        .insert([{ id, title, title_han, author, pages }])
         .select();
 
     if (error) return NextResponse.json({ error: error.message }, { status: 500 });
