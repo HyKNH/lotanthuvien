@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import { Geist, Geist_Mono, Cactus_Classical_Serif } from "next/font/google";
+import localFont from "next/font/local";
 import "./globals.css";
 
 const geistSans = Geist({
@@ -18,6 +19,12 @@ const cactus = Cactus_Classical_Serif({
   subsets: ["latin"],
 });
 
+const nomNaTong = localFont({
+  src: "/fonts/NomNaTong.woff",
+  variable: "--font-nomnatong",
+  weight: "400",
+});
+
 export const metadata: Metadata = {
   title: "瀘傘書院 - Lô Tản thư viện",
   description: "Hán Nôm library",
@@ -31,7 +38,7 @@ export default function RootLayout({
   return (
     <html lang="en">
       <body
-        className={`${geistSans.variable} ${geistMono.variable} ${cactus.variable} antialiased`}
+        className={`${geistSans.variable} ${geistMono.variable} ${cactus.variable} ${nomNaTong.variable} antialiased`}
       >
         {children}
       </body>

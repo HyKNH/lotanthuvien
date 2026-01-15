@@ -23,6 +23,14 @@
   font-family: var(--font-cactus), serif;
 }
 
+.han_text {
+  font-family: var(--font-cactus), serif;
+}
+
+.nom_text {
+  font-family: var(--font-nomnatong), serif;
+}
+
 h1 {
   font-weight: 700;
 }
