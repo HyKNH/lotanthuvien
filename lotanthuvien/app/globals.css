@@ -1,9 +1,15 @@
 @import "tailwindcss";
 
 :root {
-  --background: #ffffff;
-  --foreground: #171717;
+  --paper: #ede6d6;
+  --paper-deep: #e3d9c2;
+  --ink: #2b2620;
+  --ink-soft: #5c5344;
+  --seal: #a23b2e;
+  --indigo: #3b4a5a;
+  --rule: #c4b8a0;
 }
+
 
 @theme inline {
   --color-background: var(--background);
@@ -19,6 +25,10 @@
   }
 }
 
+.gothic-han {
+  font-family: var(--font-gothicnguyen), sans-serif;
+}
+
 .title-han {
   font-family: var(--font-cactus), serif;
 }
@@ -29,6 +39,17 @@
 
 .nom_text {
   font-family: var(--font-nomnatong), serif;
+}
+
+/* Register colors: Sino-Vietnamese (Hán) reading vs Chữ Nôm reading,
+   applied to both Han-script and Latin-transliteration text so the two
+   registers stay visually distinct regardless of script. */
+.text-sino {
+  color: var(--indigo);
+}
+
+.text-nom {
+  color: var(--seal);
 }
 
 h1 {

@@ -25,6 +25,12 @@ const nomNaTong = localFont({
   weight: "400",
 });
 
+const gothicNguyen = localFont({
+  src: "/fonts/Gothic Nguyen Regular.woff",
+  variable: "--font-gothicnguyen",
+  weight: "400",
+});
+
 export const metadata: Metadata = {
   title: "瀘傘書院 - Lô Tản thư viện",
   description: "Hán Nôm library",
@@ -38,7 +44,7 @@ export default function RootLayout({
   return (
     <html lang="en">
       <body
-        className={`${geistSans.variable} ${geistMono.variable} ${cactus.variable} ${nomNaTong.variable} antialiased`}
+        className={`${geistSans.variable} ${geistMono.variable} ${cactus.variable} ${nomNaTong.variable} ${gothicNguyen.variable} antialiased`}
       >
         {children}
       </body>
