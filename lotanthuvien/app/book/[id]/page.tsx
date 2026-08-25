@@ -60,23 +60,59 @@ export default function BookPage() {
     setOffset({ x: 0, y: 0 });
   }, [activeImage]);
 
-  /* ---- Scroll → image sync ---- */
+  /* ---- Scroll → image sync ----
+     Instead of relying on a single intersection-ratio threshold (which
+     breaks when a target's height exceeds the scroll container's height —
+     you can never reach a high ratio because the target physically can't
+     fit inside the viewport), we track *all* currently-intersecting
+     ".page-observer" elements and pick whichever one's top edge is
+     closest to the top of the scroll container. This stays correct
+     regardless of how tall any individual page happens to be. */
   useEffect(() => {
     const root = document.getElementById("text-scroll");
     if (!root) return;
 
-    const elements = root.querySelectorAll(".page-observer");
+    const elements = Array.from(
+      root.querySelectorAll<HTMLElement>(".page-observer")
+    );
+
     const observer = new IntersectionObserver(
       (entries) => {
+        // Merge newly-reported entries into the latest-known intersecting set.
         entries.forEach((entry) => {
           if (entry.isIntersecting) {
-            const img = entry.target.getAttribute("data-image");
-            if (img) setActiveImage(img);
+            intersecting.set(entry.target, entry.boundingClientRect);
+          } else {
+            intersecting.delete(entry.target);
           }
         });
+
+        if (intersecting.size === 0) return;
+
+        const rootTop = root.getBoundingClientRect().top;
+        let closestEl: Element | null = null;
+        let closestDist = Infinity;
+
+        intersecting.forEach((rect, el) => {
+          const dist = Math.abs(rect.top - rootTop);
+          if (dist < closestDist) {
+            closestDist = dist;
+            closestEl = el;
+          }
+        });
+
+        if (closestEl) {
+          const img = (closestEl as Element).getAttribute("data-image");
+          if (img) setActiveImage(img);
+        }
       },
-      { root, threshold: 0.45 }
+      { root, threshold: [0, 0.05, 0.1, 0.25, 0.5, 0.75, 1] }
     );
+
+    // Tracks the last-known bounding rect for every element currently
+    // intersecting the root, so we can compare them against each other
+    // even though entries only arrive incrementally.
+    const intersecting = new Map<Element, DOMRectReadOnly>();
 
     elements.forEach((el) => observer.observe(el));
     return () => observer.disconnect();

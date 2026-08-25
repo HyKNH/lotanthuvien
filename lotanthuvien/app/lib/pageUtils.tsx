@@ -192,7 +192,11 @@ function renderHalfPage(label: string, segments: TextSegment[]) {
   return (
     <div className="mb-8">
       <div className="text-base text-gray-400 mb-2">{label}</div>
-      <div className="text-xl han_text [writing-mode:vertical-rl] h-85 w-full overflow-x-auto overflow-y-hidden pb-3 thin-scrollbar">
+      {/* Note: use an arbitrary value (h-[21rem]) rather than h-84 — 84 is
+          not in Tailwind's default spacing scale (which jumps 80 -> 96),
+          so a bare "h-84" class silently emits no CSS unless spacing has
+          been extended in tailwind.config. */}
+      <div className="text-xl han_text [writing-mode:vertical-rl] h-[21rem] w-full overflow-x-auto overflow-y-hidden pb-3 thin-scrollbar">
         {renderSegments(han)}
       </div>
       {latin.length > 0 && (
