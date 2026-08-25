@@ -192,7 +192,7 @@ function renderHalfPage(label: string, segments: TextSegment[]) {
   return (
     <div className="mb-8">
       <div className="text-base text-gray-400 mb-2">{label}</div>
-      <div className="text-xl han_text [writing-mode:vertical-rl] h-72 w-full overflow-x-auto overflow-y-hidden pb-3 thin-scrollbar">
+      <div className="text-xl han_text [writing-mode:vertical-rl] h-85 w-full overflow-x-auto overflow-y-hidden pb-3 thin-scrollbar">
         {renderSegments(han)}
       </div>
       {latin.length > 0 && (
