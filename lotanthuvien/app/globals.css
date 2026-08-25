@@ -4,7 +4,7 @@
   --paper: #ede6d6;
   --paper-deep: #e3d9c2;
   --ink: #2b2620;
-  --ink-soft: #5c5344;
+  --ink-soft: #75573f;
   --seal: #a23b2e;
   --indigo: #3b4a5a;
   --rule: #c4b8a0;
@@ -50,6 +50,45 @@
 
 .text-nom {
   color: var(--seal);
+}
+
+/* Commentary asides get their own muted tone so {{ }} text stays visually
+   distinct even when it's plain Sino-Vietnamese (i.e. not wrapped in
+   ''' ''' as Nôm). Nôm color still takes priority when explicitly marked. */
+.text-commentary {
+  color: var(--seal);
+}
+
+/* Hide scrollbars while keeping the element scrollable — used where a
+   scrollbar isn't wanted at all. */
+.no-scrollbar {
+  -ms-overflow-style: none; /* IE and Edge */
+  scrollbar-width: none; /* Firefox */
+}
+
+.no-scrollbar::-webkit-scrollbar {
+  display: none; /* Chrome, Safari, Opera */
+}
+
+/* Thin, muted scrollbar for the vertical Han/Nôm text box — visible but
+   unobtrusive, and paired with bottom padding on the element so it sits
+   below the text instead of overlapping it. */
+.thin-scrollbar {
+  scrollbar-width: thin; /* Firefox */
+  scrollbar-color: var(--rule) transparent;
+}
+
+.thin-scrollbar::-webkit-scrollbar {
+  height: 6px;
+}
+
+.thin-scrollbar::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.thin-scrollbar::-webkit-scrollbar-thumb {
+  background-color: var(--rule);
+  border-radius: 4px;
 }
 
 h1 {

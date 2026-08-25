@@ -20,13 +20,13 @@ const cactus = Cactus_Classical_Serif({
 });
 
 const nomNaTong = localFont({
-  src: "/fonts/NomNaTong.woff",
+  src: "/fonts/NomNaTong.woff2",
   variable: "--font-nomnatong",
   weight: "400",
 });
 
 const gothicNguyen = localFont({
-  src: "/fonts/Gothic Nguyen Regular.woff",
+  src: "/fonts/Gothic Nguyen Regular.woff2",
   variable: "--font-gothicnguyen",
   weight: "400",
 });

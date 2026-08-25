@@ -82,16 +82,38 @@ export default function BookPage() {
     return () => observer.disconnect();
   }, [pages]);
 
-  /* ---- Handlers for drag & zoom ---- */
-  const handleWheel = (e: React.WheelEvent) => {
-    e.preventDefault();
-    const newZoom = Math.min(Math.max(zoom + e.deltaY * -0.0015, 1), 5);
-    setZoom(newZoom);
+  /* ---- Wheel-to-zoom (native listener: React's onWheel is passive,
+       so preventDefault() there can't stop the page from scrolling) ---- */
+  useEffect(() => {
+    const el = containerRef.current;
+    if (!el) return;
 
-    // Adjust offset to stay within bounds
-    constrainOffset(offset.x, offset.y, newZoom);
-  };
+    const clampOffset = (x: number, y: number, currentZoom: number) => {
+      const imgWidth = el.offsetWidth * currentZoom;
+      const imgHeight = el.offsetHeight * currentZoom;
+      const maxX = (imgWidth - el.offsetWidth) / 2;
+      const maxY = (imgHeight - el.offsetHeight) / 2;
 
+      return {
+        x: Math.min(Math.max(x, -maxX), maxX),
+        y: Math.min(Math.max(y, -maxY), maxY),
+      };
+    };
+
+    const handleNativeWheel = (e: WheelEvent) => {
+      e.preventDefault();
+      setZoom((prevZoom) => {
+        const newZoom = Math.min(Math.max(prevZoom + e.deltaY * -0.0015, 1), 5);
+        setOffset((prevOffset) => clampOffset(prevOffset.x, prevOffset.y, newZoom));
+        return newZoom;
+      });
+    };
+
+    el.addEventListener("wheel", handleNativeWheel, { passive: false });
+    return () => el.removeEventListener("wheel", handleNativeWheel);
+  }, [book]);
+
+  /* ---- Handlers for drag ---- */
   const handleMouseDown = (e: React.MouseEvent) => {
     e.preventDefault();
     setDragging(true);
@@ -128,7 +150,7 @@ export default function BookPage() {
   /* ---- Guards ---- */
   if (loading)
     return (
-      <div className="min-h-screen bg-[var(--paper)] text-[var(--ink)]">
+      <div className="h-screen flex flex-col bg-[var(--paper)] text-[var(--ink)]">
         <Navbar />
         <p className="mx-auto max-w-6xl px-5 py-16 text-[var(--ink-soft)]">Loading…</p>
         <Footer />
@@ -136,7 +158,7 @@ export default function BookPage() {
     );
   if (error)
     return (
-      <div className="min-h-screen bg-[var(--paper)] text-[var(--ink)]">
+      <div className="h-screen flex flex-col bg-[var(--paper)] text-[var(--ink)]">
         <Navbar />
         <p className="mx-auto max-w-6xl px-5 py-16">
           <span className="border border-[var(--seal)]/40 bg-[var(--seal)]/5 px-4 py-3 text-sm text-[var(--seal)]">
@@ -148,7 +170,7 @@ export default function BookPage() {
     );
   if (!book)
     return (
-      <div className="min-h-screen bg-[var(--paper)] text-[var(--ink)]">
+      <div className="h-screen flex flex-col bg-[var(--paper)] text-[var(--ink)]">
         <Navbar />
         <p className="mx-auto max-w-6xl px-5 py-16 text-[var(--ink-soft)]">Book not found</p>
         <Footer />
@@ -160,29 +182,30 @@ export default function BookPage() {
 ======================= */
 
   return (
-    <div className="min-h-screen bg-[var(--paper)] text-[var(--ink)]">
+    <div className="h-screen flex flex-col overflow-hidden bg-[var(--paper)] text-[var(--ink)]">
       <Navbar />
 
-      <main className="mx-auto max-w-6xl px-5 py-10">
+      <main className="flex-1 min-h-0 flex w-full flex-col overflow-hidden px-6 py-6">
         {/* Title */}
-        <p className="font-mono text-xs uppercase tracking-[0.25em] text-[var(--ink-soft)]">
-          Digitised text
-        </p>
-        <h1 className="mt-2 text-3xl font-semibold leading-tight sm:text-4xl">
-          {book.title}
-        </h1>
-        {book.title_han && (
-          <h2 className="mt-1 text-xl text-[var(--ink-soft)] mb-6">
-            <span className="title-han">{book.title_han}</span>
-          </h2>
-        )}
+        <div className="shrink-0">
+          <p className="font-mono text-xs uppercase tracking-[0.25em] text-[var(--ink-soft)]">
+            Digitised text
+          </p>
+          <h1 className="mt-2 text-3xl font-semibold leading-tight sm:text-4xl">
+            {book.title}
+          </h1>
+          {book.title_han && (
+            <h2 className="mt-1 mb-4 text-xl text-[var(--ink-soft)]">
+              <span className="title-han">{book.title_han}</span>
+            </h2>
+          )}
+        </div>
 
-        <div className="grid grid-cols-[1fr_1fr] gap-6 border-t border-[var(--rule)] pt-8">
+        <div className="grid flex-1 min-h-0 grid-cols-[1fr_1fr] gap-6 border-t border-[var(--rule)] pt-6">
           {/* Image panel with zoom/pan */}
           <div
             ref={containerRef}
-            className="border border-[var(--rule)] rounded-lg bg-black flex justify-center items-center overflow-hidden h-[80vh] w-full cursor-grab p-4"
-            onWheel={handleWheel}
+            className="border border-[var(--rule)] rounded-lg bg-black flex justify-center items-center overflow-hidden h-full w-full cursor-grab p-4"
             onMouseDown={handleMouseDown}
             onMouseMove={handleMouseMove}
             onMouseUp={handleMouseUp}
@@ -193,7 +216,7 @@ export default function BookPage() {
                 key={activeImage}
                 src={activeImage}
                 alt="Page scan"
-                className="object-contain transition-transform duration-50 select-none"
+                className="object-contain max-w-full max-h-full transition-transform duration-50 select-none"
                 style={{
                   transform: `scale(${zoom}) translate(${offset.x / zoom}px, ${offset.y / zoom}px)`,
                   cursor: dragging ? "grabbing" : "grab",
@@ -209,7 +232,7 @@ export default function BookPage() {
               through each page's label / vertical Han box / Latin text. */}
           <div
             id="text-scroll"
-            className="border border-[var(--rule)] rounded-lg bg-[var(--paper-deep)] p-4 h-[80vh] overflow-y-scroll space-y-10"
+            className="border border-[var(--rule)] rounded-lg bg-[var(--paper-deep)] p-4 h-full overflow-y-scroll space-y-10"
           >
             {pages.map((page) =>
               page.source_text ? (

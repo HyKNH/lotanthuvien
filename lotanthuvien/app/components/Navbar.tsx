@@ -2,9 +2,8 @@
 import Link from 'next/link';
 
 const NAV_LINKS = [
-  { href: '#primers', label: 'Recommendations', han: '介紹' },
-  { href: '#history', label: 'Search', han: '查詞' },
-  { href: '#translation', label: 'FAQ', han: '問答' },
+  { href: '#search', label: 'Search', han: '查究' },
+  { href: '#faq', label: 'FAQ', han: '問答' },
 ];
 
 export default function Navbar() {

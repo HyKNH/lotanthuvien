@@ -25,6 +25,7 @@ export interface TextSegment {
   text: string;
   script: Script;
   register: Register;
+  commentary: boolean;
 }
 
 /* =======================
@@ -36,45 +37,61 @@ const LATIN_OPEN = "<latin>";
 // closing tag, a forward-slash self-closing style, and the backslash style
 // ("<latin\>") that the actual database content uses.
 const LATIN_CLOSE_VARIANTS = ["</latin>", "<latin/>", "<latin\\>"];
+// {{ }} marks a commentary aside (rendered larger/indented) — independent
+// of register, so a commentary run can itself be Sino or Nôm.
 const COMMENT_OPEN = "{{";
 const COMMENT_CLOSE = "}}";
+// ''' ''' marks plain Chữ Nôm text inline — same size as surrounding text,
+// just colored/fonted as Nôm rather than Sino-Vietnamese.
+const NOM_QUOTE = "'''";
 
 /**
- * Tokenizes source text into runs tagged with both:
+ * Tokenizes source text into runs tagged with three independent toggles:
  *  - script: "han" (default) or "latin", toggled by <latin>...<close> tags
  *  - register: "sino" (default, Sino-Vietnamese) or "nom" (Chữ Nôm),
- *    toggled by {{ ... }}
+ *    toggled by ''' ... ''' — affects font/color only, not size
+ *  - commentary: false (default) or true, toggled by {{ ... }} — affects
+ *    size/indent only, independent of script or register
  *
- * The two markers are independent toggles, so {{ }} can appear either
- * inside or outside a <latin> run (and vice versa).
+ * Because these are independent toggles, any marker can appear inside any
+ * other (e.g. ''' ''' inside <latin>, {{ }} inside ''' ''', etc).
  */
 export function parseTextSegments(text: string): TextSegment[] {
   const segments: TextSegment[] = [];
 
   let script: Script = "han";
   let register: Register = "sino";
+  let commentary = false;
   let bufferStart = 0;
 
   const flush = (end: number) => {
     if (end > bufferStart) {
-      segments.push({ text: text.slice(bufferStart, end), script, register });
+      segments.push({ text: text.slice(bufferStart, end), script, register, commentary });
     }
   };
 
   let i = 0;
   while (i < text.length) {
-    if (register === "sino" && text.startsWith(COMMENT_OPEN, i)) {
+    if (!commentary && text.startsWith(COMMENT_OPEN, i)) {
       flush(i);
-      register = "nom";
+      commentary = true;
       i += COMMENT_OPEN.length;
       bufferStart = i;
       continue;
     }
 
-    if (register === "nom" && text.startsWith(COMMENT_CLOSE, i)) {
+    if (commentary && text.startsWith(COMMENT_CLOSE, i)) {
       flush(i);
-      register = "sino";
+      commentary = false;
       i += COMMENT_CLOSE.length;
+      bufferStart = i;
+      continue;
+    }
+
+    if (text.startsWith(NOM_QUOTE, i)) {
+      flush(i);
+      register = register === "nom" ? "sino" : "nom";
+      i += NOM_QUOTE.length;
       bufferStart = i;
       continue;
     }
@@ -120,19 +137,23 @@ function renderTextWithBreaks(text: string) {
   ));
 }
 
-function segmentClassName(script: Script, register: Register) {
-  // Font comes from script (Han/Nôm glyphs vs Latin transliteration).
-  const fontClass = script === "latin" ? "latin_text" : "han_text";
-  // Color comes from register: Sino-Vietnamese readings vs Chữ Nôm.
-  const colorClass = register === "nom" ? "text-nom" : "text-sino";
-  const extra = script === "han" && register === "nom" ? "nom_text text-lg ml-1" : "";
+function segmentClassName(script: Script, register: Register, commentary: boolean) {
+  // Font/color: Latin script always uses the Latin font; Han script uses
+  // han_text (Sino) or nom_text (Nôm) depending on register.
+  const fontClass = script === "latin" ? "latin_text" : register === "nom" ? "nom_text" : "han_text";
+  // Color: explicit Nôm register always wins. Otherwise, commentary gets
+  // its own muted tone so it stays visually distinct from body text; plain
+  // body text falls back to the Sino color.
+  const colorClass = register === "nom" ? "text-nom" : commentary ? "text-commentary" : "text-sino";
+  // Commentary also adds size/indent, independent of the color choice above.
+  const extra = commentary ? "text-lg ml-1" : "";
 
   return [fontClass, colorClass, extra].filter(Boolean).join(" ");
 }
 
 export function renderSegments(segments: TextSegment[]) {
   return segments.map((seg, idx) => (
-    <span key={idx} className={segmentClassName(seg.script, seg.register)}>
+    <span key={idx} className={segmentClassName(seg.script, seg.register, seg.commentary)}>
       {renderTextWithBreaks(seg.text)}
     </span>
   ));
@@ -171,7 +192,7 @@ function renderHalfPage(label: string, segments: TextSegment[]) {
   return (
     <div className="mb-8">
       <div className="text-base text-gray-400 mb-2">{label}</div>
-      <div className="text-xl han_text [writing-mode:vertical-rl] h-64 w-full overflow-x-auto overflow-y-hidden">
+      <div className="text-xl han_text [writing-mode:vertical-rl] h-72 w-full overflow-x-auto overflow-y-hidden pb-3 thin-scrollbar">
         {renderSegments(han)}
       </div>
       {latin.length > 0 && (
@@ -193,12 +214,12 @@ export function renderPage(pageNumber: number, sourceText: string) {
     if (seg.text.includes("<page_break>")) {
       const [before, after] = seg.text.split("<page_break>");
       if (!foundBreak) {
-        pageA.push({ text: before, script: seg.script, register: seg.register });
-        pageB.push({ text: after, script: seg.script, register: seg.register });
+        pageA.push({ text: before, script: seg.script, register: seg.register, commentary: seg.commentary });
+        pageB.push({ text: after, script: seg.script, register: seg.register, commentary: seg.commentary });
         foundBreak = true;
       } else {
-        pageB.push({ text: before, script: seg.script, register: seg.register });
-        pageB.push({ text: after, script: seg.script, register: seg.register });
+        pageB.push({ text: before, script: seg.script, register: seg.register, commentary: seg.commentary });
+        pageB.push({ text: after, script: seg.script, register: seg.register, commentary: seg.commentary });
       }
     } else {
       if (!foundBreak) pageA.push(seg);
