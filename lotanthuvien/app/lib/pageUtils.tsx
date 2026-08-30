@@ -1,9 +1,5 @@
 import React from "react";
 
-/* =======================
-   Types
-======================= */
-
 export interface Book {
   id: string;
   title: string;
@@ -16,6 +12,30 @@ export interface Page {
   page_number: number;
   image_url: string | null;
   source_text: string | null;
+  section?: PageSection | null;
+  side?: "a" | "b" | null;
+}
+
+export type PageSection = "title" | "preface" | "toc" | (string & {});
+
+const SECTION_DISPLAY_NAMES: Partial<Record<PageSection, string>> = {
+  title: "Title",
+  preface: "Preface",
+  toc: "TOC",
+};
+
+function sectionDisplayName(section: PageSection): string {
+  const known = SECTION_DISPLAY_NAMES[section];
+  if (known) return known;
+  const match = section.match(/^\d+\s+(.+)/);
+  return match ? match[1] : section;
+}
+
+export interface BookSection {
+  id: string;
+  pageNumber: number;
+  section?: PageSection | null;
+  title: string;
 }
 
 export type Script = "han" | "latin";
@@ -26,47 +46,29 @@ export interface TextSegment {
   script: Script;
   register: Register;
   commentary: boolean;
+  section: boolean;
+  sectionId?: string;
 }
 
-/* =======================
-   Text parsing utilities
-======================= */
-
 const LATIN_OPEN = "<latin>";
-// Accept several closing-tag styles seen in the source data: a proper
-// closing tag, a forward-slash self-closing style, and the backslash style
-// ("<latin\>") that the actual database content uses.
 const LATIN_CLOSE_VARIANTS = ["</latin>", "<latin/>", "<latin\\>"];
-// {{ }} marks a commentary aside (rendered larger/indented) — independent
-// of register, so a commentary run can itself be Sino or Nôm.
 const COMMENT_OPEN = "{{";
 const COMMENT_CLOSE = "}}";
-// ''' ''' marks plain Chữ Nôm text inline — same size as surrounding text,
-// just colored/fonted as Nôm rather than Sino-Vietnamese.
 const NOM_QUOTE = "'''";
+const SECTION_MARK = "==";
 
-/**
- * Tokenizes source text into runs tagged with three independent toggles:
- *  - script: "han" (default) or "latin", toggled by <latin>...<close> tags
- *  - register: "sino" (default, Sino-Vietnamese) or "nom" (Chữ Nôm),
- *    toggled by ''' ... ''' — affects font/color only, not size
- *  - commentary: false (default) or true, toggled by {{ ... }} — affects
- *    size/indent only, independent of script or register
- *
- * Because these are independent toggles, any marker can appear inside any
- * other (e.g. ''' ''' inside <latin>, {{ }} inside ''' ''', etc).
- */
 export function parseTextSegments(text: string): TextSegment[] {
   const segments: TextSegment[] = [];
 
   let script: Script = "han";
   let register: Register = "sino";
   let commentary = false;
+  let section = false;
   let bufferStart = 0;
 
   const flush = (end: number) => {
     if (end > bufferStart) {
-      segments.push({ text: text.slice(bufferStart, end), script, register, commentary });
+      segments.push({ text: text.slice(bufferStart, end), script, register, commentary, section });
     }
   };
 
@@ -92,6 +94,14 @@ export function parseTextSegments(text: string): TextSegment[] {
       flush(i);
       register = register === "nom" ? "sino" : "nom";
       i += NOM_QUOTE.length;
+      bufferStart = i;
+      continue;
+    }
+
+    if (text.startsWith(SECTION_MARK, i)) {
+      flush(i);
+      section = !section;
+      i += SECTION_MARK.length;
       bufferStart = i;
       continue;
     }
@@ -122,48 +132,77 @@ export function parseTextSegments(text: string): TextSegment[] {
   return segments;
 }
 
-/**
- * Renders a single segment's text, converting literal "<br>" markers
- * (stored in the database as plain text) into actual React <br /> line
- * breaks instead of printing them out as text.
- */
-function renderTextWithBreaks(text: string) {
+export function buildAnchorKey(pageNumber: number, section?: PageSection | null, side?: "a" | "b" | null): string {
+  return `${section ?? "main"}-${pageNumber}${side ? `-${side}` : ""}`;
+}
+
+export function assignSectionIds(segments: TextSegment[], anchorKey: string): TextSegment[] {
+  let counter = 0;
+  let prevWasSection = false;
+
+  return segments.map((seg) => {
+    if (seg.section && !prevWasSection) {
+      prevWasSection = true;
+      return { ...seg, sectionId: `section-${anchorKey}-${counter++}` };
+    }
+    prevWasSection = seg.section;
+    return seg;
+  });
+}
+
+function highlightQueryMatches(text: string, query: string) {
+  const trimmed = query.trim();
+  if (!trimmed) return text;
+
+  const escaped = trimmed.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+  const parts = text.split(new RegExp(`(${escaped})`, "gi"));
+
+  return parts.map((part, i) =>
+    part.toLowerCase() === trimmed.toLowerCase() ? (
+      <mark
+        key={i}
+        className="search-highlight rounded-sm bg-yellow-300/50 px-0.5 text-inherit"
+      >
+        {part}
+      </mark>
+    ) : (
+      <React.Fragment key={i}>{part}</React.Fragment>
+    )
+  );
+}
+
+function renderTextWithBreaks(text: string, highlightQuery?: string) {
   const parts = text.split("<br>");
   return parts.map((part, i) => (
     <React.Fragment key={i}>
-      {part}
+      {highlightQuery ? highlightQueryMatches(part, highlightQuery) : part}
       {i < parts.length - 1 && <br />}
     </React.Fragment>
   ));
 }
 
-function segmentClassName(script: Script, register: Register, commentary: boolean) {
-  // Font/color: Latin script always uses the Latin font; Han script uses
-  // han_text (Sino) or nom_text (Nôm) depending on register.
+function segmentClassName(script: Script, register: Register, commentary: boolean, section: boolean) {
   const fontClass = script === "latin" ? "latin_text" : register === "nom" ? "nom_text" : "han_text";
-  // Color: explicit Nôm register always wins. Otherwise, commentary gets
-  // its own muted tone so it stays visually distinct from body text; plain
-  // body text falls back to the Sino color.
   const colorClass = register === "nom" ? "text-nom" : commentary ? "text-commentary" : "text-sino";
-  // Commentary also adds size/indent, independent of the color choice above.
-  const extra = commentary ? "text-lg ml-1" : "";
+  const extra = [commentary ? "text-lg ml-1" : "", section ? "font-bold text-section" : ""]
+    .filter(Boolean)
+    .join(" ");
 
   return [fontClass, colorClass, extra].filter(Boolean).join(" ");
 }
 
-export function renderSegments(segments: TextSegment[]) {
+export function renderSegments(segments: TextSegment[], highlightQuery?: string) {
   return segments.map((seg, idx) => (
-    <span key={idx} className={segmentClassName(seg.script, seg.register, seg.commentary)}>
-      {renderTextWithBreaks(seg.text)}
+    <span
+      key={idx}
+      id={seg.sectionId}
+      className={segmentClassName(seg.script, seg.register, seg.commentary, seg.section)}
+    >
+      {renderTextWithBreaks(seg.text, highlightQuery)}
     </span>
   ));
 }
 
-/**
- * Splits segments into the ones that belong inside the vertical Han/Nôm
- * column (script "han") and the ones that should render separately as
- * ordinary horizontal Latin-script text (script "latin").
- */
 function splitByScript(segments: TextSegment[]) {
   const han: TextSegment[] = [];
   const latin: TextSegment[] = [];
@@ -176,40 +215,59 @@ function splitByScript(segments: TextSegment[]) {
   return { han, latin };
 }
 
-/* =======================
-   Page rendering (a / b)
-======================= */
+const BLANK_MARKER = "<blank>";
 
-/**
- * Renders one half-page (the "a" or "b" side): a plain horizontal label,
- * a vertical (top-to-bottom, right-to-left) Han/Nôm text box that scrolls
- * horizontally if its content is taller than the box, and any Latin-script
- * text rendered separately below it in normal horizontal orientation.
- */
-function renderHalfPage(label: string, segments: TextSegment[]) {
+function isBlankHalfPage(segments: TextSegment[]): boolean {
+  return segments.length === 1 && segments[0].text.trim().toLowerCase() === BLANK_MARKER;
+}
+
+function renderHalfPage(label: string, segments: TextSegment[], highlightQuery?: string) {
+  if (isBlankHalfPage(segments)) {
+    return (
+      <div className="mb-8">
+        <div className="text-base text-gray-400 mb-2">{label}</div>
+        <div className="text-base italic text-gray-400 py-8 text-center">
+          This page is blank.
+        </div>
+      </div>
+    );
+  }
+
   const { han, latin } = splitByScript(segments);
 
   return (
     <div className="mb-8">
       <div className="text-base text-gray-400 mb-2">{label}</div>
-      {/* Note: use an arbitrary value (h-[21rem]) rather than h-84 — 84 is
-          not in Tailwind's default spacing scale (which jumps 80 -> 96),
-          so a bare "h-84" class silently emits no CSS unless spacing has
-          been extended in tailwind.config. */}
       <div className="text-xl han_text [writing-mode:vertical-rl] h-[21rem] w-full overflow-x-auto overflow-y-hidden pb-3 thin-scrollbar">
-        {renderSegments(han)}
+        {renderSegments(han, highlightQuery)}
       </div>
       {latin.length > 0 && (
         <div className="text-base text-gray-600 mt-2 latin_text">
-          {renderSegments(latin)}
+          {renderSegments(latin, highlightQuery)}
         </div>
       )}
     </div>
   );
 }
 
-export function renderPage(pageNumber: number, sourceText: string) {
-  const segments = parseTextSegments(sourceText);
+function buildFolioLabel(pageNumber: number, side: "a" | "b", section?: PageSection | null) {
+  const withSide = `${pageNumber}${side}`;
+  if (!section) return withSide;
+  return `${sectionDisplayName(section)} ${withSide}`;
+}
+
+export function renderPage(
+  pageNumber: number,
+  sourceText: string,
+  highlightQuery?: string,
+  section?: PageSection | null,
+  side?: "a" | "b" | null
+) {
+  if (side === "a" || side === "b") {
+    const segments = assignSectionIds(parseTextSegments(sourceText), buildAnchorKey(pageNumber, section, side));
+    return renderHalfPage(buildFolioLabel(pageNumber, side, section), segments, highlightQuery);
+  }
+  const segments = assignSectionIds(parseTextSegments(sourceText), buildAnchorKey(pageNumber, section));
   let foundBreak = false;
   const pageA: TextSegment[] = [];
   const pageB: TextSegment[] = [];
@@ -218,12 +276,19 @@ export function renderPage(pageNumber: number, sourceText: string) {
     if (seg.text.includes("<page_break>")) {
       const [before, after] = seg.text.split("<page_break>");
       if (!foundBreak) {
-        pageA.push({ text: before, script: seg.script, register: seg.register, commentary: seg.commentary });
-        pageB.push({ text: after, script: seg.script, register: seg.register, commentary: seg.commentary });
+        pageA.push({
+          text: before,
+          script: seg.script,
+          register: seg.register,
+          commentary: seg.commentary,
+          section: seg.section,
+          sectionId: seg.sectionId,
+        });
+        pageB.push({ text: after, script: seg.script, register: seg.register, commentary: seg.commentary, section: seg.section });
         foundBreak = true;
       } else {
-        pageB.push({ text: before, script: seg.script, register: seg.register, commentary: seg.commentary });
-        pageB.push({ text: after, script: seg.script, register: seg.register, commentary: seg.commentary });
+        pageB.push({ text: before, script: seg.script, register: seg.register, commentary: seg.commentary, section: seg.section });
+        pageB.push({ text: after, script: seg.script, register: seg.register, commentary: seg.commentary, section: seg.section });
       }
     } else {
       if (!foundBreak) pageA.push(seg);
@@ -233,8 +298,56 @@ export function renderPage(pageNumber: number, sourceText: string) {
 
   return (
     <>
-      {renderHalfPage(`${pageNumber}a`, pageA)}
-      {pageB.length > 0 && renderHalfPage(`${pageNumber}b`, pageB)}
+      {renderHalfPage(buildFolioLabel(pageNumber, "a", section), pageA, highlightQuery)}
+      {pageB.length > 0 &&
+        renderHalfPage(buildFolioLabel(pageNumber, "b", section), pageB, highlightQuery)}
     </>
+  );
+}
+
+function cleanSectionTitle(text: string) {
+  return text.replace(/<br>/g, " ").replace(/\s+/g, " ").trim();
+}
+
+export function extractPageSections(
+  pageNumber: number,
+  sourceText: string,
+  section?: PageSection | null,
+  side?: "a" | "b" | null
+): BookSection[] {
+  const anchorKey = side === "a" || side === "b" ? buildAnchorKey(pageNumber, section, side) : buildAnchorKey(pageNumber, section);
+  const segments = assignSectionIds(parseTextSegments(sourceText), anchorKey);
+
+  const sections: BookSection[] = [];
+  let currentId: string | null = null;
+  let currentTitle = "";
+
+  const flushCurrent = () => {
+    if (currentId) {
+      sections.push({ id: currentId, pageNumber, section, title: cleanSectionTitle(currentTitle) });
+    }
+    currentId = null;
+    currentTitle = "";
+  };
+
+  for (const seg of segments) {
+    if (!seg.section) {
+      flushCurrent();
+      continue;
+    }
+    if (seg.sectionId && seg.sectionId !== currentId) {
+      flushCurrent();
+      currentId = seg.sectionId;
+    }
+    currentTitle += seg.text;
+  }
+  flushCurrent();
+
+  return sections;
+}
+
+export function getBookSections(pages: Page[]): BookSection[] {
+  return pages.flatMap((page) =>
+    page.source_text ? extractPageSections(page.page_number, page.source_text, page.section, page.side) : []
   );
 }

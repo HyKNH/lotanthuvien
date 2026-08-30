@@ -4,6 +4,7 @@ import { NextResponse } from 'next/server';
 const supabase = createClient();
 
 export async function GET() {
+  // Fetch all books
   const { data, error } = await supabase
     .from('books')
     .select(' id, title, title_han, cat ')
@@ -17,6 +18,7 @@ export async function GET() {
 export async function POST(req: Request) {
   const { id, title, title_han, cat_id } = await req.json();
 
+  // Return the inserted record.
   const { data, error } = await supabase
     .from('books')
     .insert([{ id, title, title_han, cat: cat_id }])

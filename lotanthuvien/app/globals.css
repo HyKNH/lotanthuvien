@@ -1,12 +1,12 @@
 @import "tailwindcss";
 
 :root {
-  --paper: #ede6d6;
-  --paper-deep: #e3d9c2;
-  --ink: #2b2620;
+  --paper: #ffff;
+  --paper-deep: #ddd9d1;
+  --ink: #1b1a19;
   --ink-soft: #75573f;
   --seal: #a23b2e;
-  --indigo: #3b4a5a;
+  --indigo: #222a33;
   --rule: #c4b8a0;
 }
 
@@ -30,20 +30,17 @@
 }
 
 .title-han {
-  font-family: var(--font-cactus), serif;
+  font-family: var(--font-cactus), var(--font-nomnatong) serif;
 }
 
 .han_text {
-  font-family: var(--font-cactus), serif;
+  font-family: var(--font-cactus), var(--font-nomnatong), serif;
 }
 
 .nom_text {
-  font-family: var(--font-nomnatong), serif;
+  font-family: var(--font-nomnatong), var(--font-cactus), serif;
 }
 
-/* Register colors: Sino-Vietnamese (Hán) reading vs Chữ Nôm reading,
-   applied to both Han-script and Latin-transliteration text so the two
-   registers stay visually distinct regardless of script. */
 .text-sino {
   color: var(--indigo);
 }
@@ -52,29 +49,21 @@
   color: var(--seal);
 }
 
-/* Commentary asides get their own muted tone so {{ }} text stays visually
-   distinct even when it's plain Sino-Vietnamese (i.e. not wrapped in
-   ''' ''' as Nôm). Nôm color still takes priority when explicitly marked. */
 .text-commentary {
   color: var(--seal);
 }
 
-/* Hide scrollbars while keeping the element scrollable — used where a
-   scrollbar isn't wanted at all. */
 .no-scrollbar {
-  -ms-overflow-style: none; /* IE and Edge */
-  scrollbar-width: none; /* Firefox */
+  -ms-overflow-style: none;
+  scrollbar-width: none;
 }
 
 .no-scrollbar::-webkit-scrollbar {
-  display: none; /* Chrome, Safari, Opera */
+  display: none;
 }
 
-/* Thin, muted scrollbar for the vertical Han/Nôm text box — visible but
-   unobtrusive, and paired with bottom padding on the element so it sits
-   below the text instead of overlapping it. */
 .thin-scrollbar {
-  scrollbar-width: thin; /* Firefox */
+  scrollbar-width: thin;
   scrollbar-color: var(--rule) transparent;
 }
 

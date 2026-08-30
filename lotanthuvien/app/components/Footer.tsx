@@ -6,6 +6,9 @@ export default function Footer() {
         <p className="text-[11px] uppercase tracking-[0.15em] text-[var(--ink-soft)]/70">
           Lô Tản thư viện - an archive for Hán Nôm texts
         </p>
+        <p className="text-[11px] uppercase tracking-[0.15em] text-[var(--ink-soft)]/70">
+          Have a correction, question, or suggestion? Email us at: <a href="mailto:lotanthuvien@gmail.com">lotanthuvien@gmail.com</a>
+        </p>
       </div>
     </footer>
   );

@@ -53,14 +53,14 @@ export default function Home() {
             style={{ writingMode: 'vertical-rl' }}
             aria-hidden
           >
-           古籍
+           漢喃
           </span>
           <div className="max-w-xl">
             <p className="font-mono text-xs uppercase tracking-[0.25em] text-[var(--ink-soft)]">
               An open archive of digitised Hán Nôm texts
             </p>
             <h1 className="mt-2 text-3xl font-semibold leading-tight sm:text-4xl">
-              Primers, histories, and translations, kept as they were carved.
+              Gathering the written works of earlier generations for readers yet to come.
             </h1>
             <p className="mt-4 text-[var(--ink-soft)]">
               Browse digitised texts by category below

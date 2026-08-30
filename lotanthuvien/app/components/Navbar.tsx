@@ -2,8 +2,8 @@
 import Link from 'next/link';
 
 const NAV_LINKS = [
-  { href: '#search', label: 'Search', han: '查究' },
-  { href: '#faq', label: 'FAQ', han: '問答' },
+  { href: '/search', label: 'Search', han: '查究' },
+  { href: '/faq', label: 'FAQ', han: '問答' },
 ];
 
 export default function Navbar() {
@@ -28,7 +28,7 @@ export default function Navbar() {
 
         <nav className="ml-auto flex items-center gap-5">
           {NAV_LINKS.map((link) => (
-            <a
+            <Link
               key={link.href}
               href={link.href}
               className="group flex items-baseline gap-1.5 text-sm text-[var(--ink-soft)] transition-colors hover:text-[var(--seal)]"
@@ -37,7 +37,7 @@ export default function Navbar() {
                 {link.han}
               </span>
               {link.label}
-            </a>
+            </Link>
           ))}
         </nav>
       </div>
