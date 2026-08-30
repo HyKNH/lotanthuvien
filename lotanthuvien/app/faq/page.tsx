@@ -19,7 +19,7 @@ const FAQ_ITEMS: FaqItem[] = [
   },
   {
     q: "What's the difference between chữ Hán, chữ Nôm, and chữ Quốc ngữ?",
-    a: "Hán refers Literary Chinese used in Vietnam. Chữ Nôm is a script based on Chinese characters which was to write spoken Vietnamese directly. Chữ Quốc ngữ is the modern Latin-alphabet Vietnamese script.",
+    a: "Hán văn refers Literary Chinese used in Vietnam, chữ Hán are the characters used to write Hán văn. Chữ Nôm is a script based on Chinese characters which was to write spoken Vietnamese directly. Chữ Quốc ngữ is the modern Latin-alphabet Vietnamese script.",
   },
   {
     q: "How does search work?",
