@@ -52,7 +52,14 @@ app/
 | `id` | string |
 | `title` | string |
 | `title_han` | string |
-| `cat` | number (1=Kinh, 2=Sử, 3=Tử, 4=Tập) |
+| `cat` | number |
+
+**Cat**
+| field | type |
+|---|---|
+| `id` | int |
+| `name` | string |
+| `slug` | string |
 
 **Page**
 | field | type |
