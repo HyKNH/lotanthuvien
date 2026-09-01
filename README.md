@@ -66,7 +66,7 @@ app/
 |---|---|
 | `id` | string |
 | `page_number` | number |
-| `image_url` | string \| null (path only; public URL built at render time) |
+| `image_url` | string \| null |
 | `source_text` | string \| null |
 | `section` | string \| null (`"title"`, `"preface"`, `"toc"`, or free-form, e.g. `"1 Đại Học"`) |
 | `side` | `"a"` \| `"b"` \| null |
